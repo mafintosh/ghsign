@@ -70,8 +70,10 @@ var signer = function(username, keys) {
         if (err) return cb(err)
 
         var key = keys.reduce(function(result, key) {
-          return result || pubs.indexOf(toPEM(key.type+' '+key.ssh_key)) > -1
-        })
+          return result || pubs.indexOf(toPEM(key.type+' '+key.ssh_key)) > -1 && key
+        }, null)
+
+        if (!key) return cb(new Error('No corresponding local SSH private key found for '+username))
 
         cb(null, key)
       })
