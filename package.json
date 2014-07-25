@@ -1,0 +1,30 @@
+{
+  "name": "ghsign",
+  "version": "0.0.0",
+  "description": "Sign/verify data using your local ssh private key and your public key from Github",
+  "main": "index.js",
+  "dependencies": {
+    "request": "^2.39.0",
+    "ssh-agent": "^0.2.2",
+    "ssh-key-to-pem": "^0.11.0",
+    "thunky": "^0.1.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "tape test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mafintosh/github-sign"
+  },
+  "keywords": [
+    "sign",
+    "github"
+  ],
+  "author": "Mathias Buus",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mafintosh/github-sign/issues"
+  },
+  "homepage": "https://github.com/mafintosh/github-sign"
+}
