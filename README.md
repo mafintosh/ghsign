@@ -11,7 +11,7 @@ npm install ghsign
 ``` js
 var ghsign = require('ghsign')
 
-var sign = ghsign.signer('mafintosh')   // create a signer
+var sign = ghsign.signer('mafintosh')   // create a signer (has be your own Github username)
 var verify = ghsign.verify('mafintosh') // create a verifier
 
 // sign some data
