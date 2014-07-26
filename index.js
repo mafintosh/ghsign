@@ -15,6 +15,7 @@ var readSync = function(file) {
 }
 
 var HOME = process.env.HOME || process.env.USERPROFILE
+var CACHE = path.join(HOME, '.cache')
 var DEFAULT_SSH_KEY = readSync(path.join(HOME, '.ssh/id_rsa')) || readSync(path.join(HOME, '.ssh/id_dsa'))
 
 var toPEM = function(key) {
@@ -63,24 +64,55 @@ var signer = function(username, keys) {
     }
 
   var detectPublicKey = thunky(function(cb) {
-    pks(function(err, pubs) {
-      if (err) return cb(err)
-
+    var oncache = function(cache, cb) {
       client.requestIdentities(function(err, keys) {
         if (err) return cb(err)
 
         var key = keys.reduce(function(result, key) {
-          return result || pubs.indexOf(toPEM(key.type+' '+key.ssh_key)) > -1 && key
-        }, null)
+          return result || (key.type === cache.type && key.ssh_key === cache.ssh_key && key)
+        })
 
-        if (!key) return cb(new Error('No corresponding local SSH private key found for '+username))
-
+        if (!key) return onnocache(cb)
         cb(null, key)
       })
+    }
+
+    var onnocache = function(cb) {
+      pks(function(err, pubs) {
+        if (err) return cb(err)
+
+        client.requestIdentities(function(err, keys) {
+          if (err) return cb(err)
+
+          var key = keys.reduce(function(result, key) {
+            return result || pubs.indexOf(toPEM(key.type+' '+key.ssh_key)) > -1 && key
+          }, null)
+
+          if (!key) return cb(new Error('No corresponding local SSH private key found for '+username))
+
+          fs.mkdir(CACHE, function() {
+            fs.writeFile(path.join(CACHE, 'ghsign.json'), JSON.stringify({type:key.type, ssh_key:key.ssh_key}), function() {
+              cb(null, key)
+            })
+          })
+        })
+      })
+    }
+
+    fs.readFile(path.join(CACHE, 'ghsign.json'), 'utf-8', function(err, data) {
+      if (!data) return onnocache(cb)
+      try {
+        data = JSON.parse(data)
+      } catch (err) {
+        return oncache(cb)
+      }
+      oncache(data, cb)
     })
+
   })
 
-  return function(data, cb) {
+  return function sign(data, enc, cb) {
+    if (typeof enc === 'function') return sign(data, null, enc)
     if (typeof data === 'string') data = new Buffer(data)
 
     detectPublicKey(function(err, key) {
@@ -89,7 +121,10 @@ var signer = function(username, keys) {
       client.sign(key, data, function(err, sig) {
         if (err) return cb(err)
 
-        cb(null, sig.signature)
+        if (enc === 'base64') return cb(null, sig.signature)
+        var buf = new Buffer(sig.signature, 'base64')
+        if (enc) buf = buf.toString(enc)
+        cb(null, buf)
       })
     })
   }
@@ -100,14 +135,15 @@ var verifier = function(username) {
     githubPublicKeys(username, cb)
   })
 
-  return function(data, sig, cb) {
+  return function verify(data, sig, enc, cb) {
+    if (typeof enc === 'function') return verify(data, sig, null, enc)
     if (!sig) return cb(null, false)
 
     pks(function(err, pubs) {
       if (err) return cb(err)
 
       var verified = pubs.some(function(key) {
-        return crypto.createVerify('RSA-SHA1').update(data).verify(key, sig, 'base64')
+        return crypto.createVerify('RSA-SHA1').update(data).verify(key, sig, enc)
       })
 
       cb(null, verified)
