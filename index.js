@@ -70,7 +70,7 @@ var signer = function(username, keys) {
 
         var key = keys.reduce(function(result, key) {
           return result || (key.type === cache.type && key.ssh_key === cache.ssh_key && key)
-        })
+        }, null)
 
         if (!key) return onnocache(cb)
         cb(null, key)
@@ -85,13 +85,13 @@ var signer = function(username, keys) {
           if (err) return cb(err)
 
           var key = keys.reduce(function(result, key) {
-            return result || pubs.indexOf(toPEM(key.type+' '+key.ssh_key)) > -1 && key
+            return result || (pubs.indexOf(toPEM(key.type+' '+key.ssh_key)) > -1 && key)
           }, null)
 
           if (!key) return cb(new Error('No corresponding local SSH private key found for '+username))
 
           fs.mkdir(CACHE, function() {
-            fs.writeFile(path.join(CACHE, 'ghsign.json'), JSON.stringify({type:key.type, ssh_key:key.ssh_key}), function() {
+            fs.writeFile(path.join(CACHE, 'ghsign.json'), JSON.stringify({username:username, type:key.type, ssh_key:key.ssh_key}), function() {
               cb(null, key)
             })
           })
@@ -106,6 +106,7 @@ var signer = function(username, keys) {
       } catch (err) {
         return oncache(cb)
       }
+      if (data.username !== username) return onnocache(cb)
       oncache(data, cb)
     })
 
