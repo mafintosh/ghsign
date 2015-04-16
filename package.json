@@ -15,7 +15,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/mafintosh/github-sign"
+    "url": "https://github.com/mafintosh/ghsign"
   },
   "keywords": [
     "sign",
@@ -24,7 +24,7 @@
   "author": "Mathias Buus",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/mafintosh/github-sign/issues"
+    "url": "https://github.com/mafintosh/ghsign/issues"
   },
-  "homepage": "https://github.com/mafintosh/github-sign"
+  "homepage": "https://github.com/mafintosh/ghsign"
 }
