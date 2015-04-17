@@ -17,6 +17,7 @@ var readSync = function(file) {
 var HOME = process.env.HOME || process.env.USERPROFILE
 var CACHE = path.join(HOME, '.cache')
 var DEFAULT_SSH_KEY = readSync(path.join(HOME, '.ssh/id_rsa')) || readSync(path.join(HOME, '.ssh/id_dsa'))
+var SSH_AUTH_SOCK = !!process.env.SSH_AUTH_SOCK
 
 var toPEM = function(key) {
   if (Buffer.isBuffer(key)) key = key.toString()
@@ -43,7 +44,7 @@ var signer = function(username, keys) {
   var privateKey = keys.length && !isPublicKey(keys[0]) && keys[0]
   var publicKeys = keys.length && keys.every(isPublicKey) && keys
 
-  if (!process.env.SSH_AUTH_SOCK && !privateKey) privateKey = DEFAULT_SSH_KEY
+  if (!SSH_AUTH_SOCK && !privateKey) privateKey = DEFAULT_SSH_KEY
 
   if (privateKey) {
     if (privateKey.toString().indexOf('ENCRYPTED') > -1) throw new Error('Encrypted keys not supported. Setup an SSH agent or decrypt it first')
@@ -88,6 +89,11 @@ var signer = function(username, keys) {
           var key = keys.reduce(function(result, key) {
             return result || (pubs.indexOf(toPEM(key.type+' '+key.ssh_key)) > -1 && key)
           }, null)
+
+          if (!key && SSH_AUTH_SOCK && DEFAULT_SSH_KEY) {
+            SSH_AUTH_SOCK = false
+            return signer(username, keys)
+          }
 
           if (!key) return cb(new Error('No corresponding local SSH private key found for '+username))
 
