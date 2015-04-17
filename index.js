@@ -46,7 +46,7 @@ var signer = function(username, keys) {
   if (!process.env.SSH_AUTH_SOCK && !privateKey) privateKey = DEFAULT_SSH_KEY
 
   if (privateKey) {
-    if (privateKey.indexOf('ENCRYPTED') > -1) throw new Error('Encrypted keys not supported. Setup an SSH agent or decrypt it first')
+    if (privateKey.toString().indexOf('ENCRYPTED') > -1) throw new Error('Encrypted keys not supported. Setup an SSH agent or decrypt it first')
     return function(data, cb) {
       process.nextTick(function() {
         cb(null, crypto.createSign('RSA-SHA1').update(data).sign(privateKey, 'base64'))
