@@ -47,9 +47,10 @@ var signer = function(username, keys) {
 
   if (privateKey) {
     if (privateKey.toString().indexOf('ENCRYPTED') > -1) throw new Error('Encrypted keys not supported. Setup an SSH agent or decrypt it first')
-    return function(data, cb) {
+    return function sign(data, enc, cb) {
+      if (typeof enc === 'function') return sign(data, null, enc)
       process.nextTick(function() {
-        cb(null, crypto.createSign('RSA-SHA1').update(data).sign(privateKey, 'base64'))
+        cb(null, crypto.createSign('RSA-SHA1').update(data).sign(privateKey, enc))
       })
     }
   }
