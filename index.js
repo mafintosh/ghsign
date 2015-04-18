@@ -92,7 +92,7 @@ var signer = function(username, keys) {
 
           if (!key && SSH_AUTH_SOCK && DEFAULT_SSH_KEY) {
             SSH_AUTH_SOCK = false
-            return signer(username, keys)
+            return signer(username)
           }
 
           if (!key) return cb(new Error('No corresponding local SSH private key found for '+username))
