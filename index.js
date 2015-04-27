@@ -42,15 +42,17 @@ var create = function (fetchKey) {
 
     var privateKey = keys.length && !isPublicKey(keys[0]) && keys[0]
     var publicKeys = keys.length && keys.every(isPublicKey) && keys
+    var encrypted = false
 
     if (!SSH_AUTH_SOCK && !privateKey) privateKey = DEFAULT_SSH_KEY
 
     if (privateKey) {
-      if (privateKey.toString().indexOf('ENCRYPTED') > -1) throw new Error('Encrypted keys not supported. Setup an SSH agent or decrypt it first')
+      if (privateKey.toString().indexOf('ENCRYPTED') > -1) encrypted = true
       return function sign(data, enc, cb) {
         if (typeof enc === 'function') return sign(data, null, enc)
         process.nextTick(function() {
-          cb(null, crypto.createSign('RSA-SHA1').update(data).sign(privateKey, enc))
+          if (encrypted) return cb(new Error('Encrypted keys not supported. Setup an SSH agent or decrypt it first'))
+          cb(null, crypto.createSign('RSA-SHA256').update(data).sign(privateKey, enc))
         })
       }
     }
@@ -156,7 +158,7 @@ var create = function (fetchKey) {
         if (err) return cb(err)
 
         var verified = pubs.some(function(key) {
-          return crypto.createVerify('RSA-SHA1').update(data).verify(key, sig, enc)
+          return crypto.createVerify('RSA-SHA256').update(data).verify(key, sig, enc)
         })
 
         cb(null, verified)
