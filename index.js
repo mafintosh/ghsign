@@ -92,7 +92,7 @@ var signer = function(username, keys) {
 
           if (!key && SSH_AUTH_SOCK && DEFAULT_SSH_KEY) {
             SSH_AUTH_SOCK = false
-            return signer(username)
+            return cb(null, null)
           }
 
           if (!key) return cb(new Error('No corresponding local SSH private key found for '+username))
@@ -116,15 +116,21 @@ var signer = function(username, keys) {
       if (data.username !== username) return onnocache(cb)
       oncache(data, cb)
     })
-
   })
+
+  var cachedSign
 
   return function sign(data, enc, cb) {
     if (typeof enc === 'function') return sign(data, null, enc)
     if (typeof data === 'string') data = new Buffer(data)
+    if (cachedSign) return cachedSign(data, enc, cb)
 
     detectPublicKey(function(err, key) {
       if (err) return cb(err)
+      if (key === null) {
+        cachedSign = signer(username)
+        return sign(data, enc, cb)
+      }
 
       client.sign(key, data, function(err, sig) {
         if (err) return cb(err)
