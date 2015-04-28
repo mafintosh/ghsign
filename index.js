@@ -158,7 +158,7 @@ var create = function (fetchKey) {
         if (err) return cb(err)
 
         var verified = pubs.some(function(key) {
-          return crypto.createVerify('RSA-SHA256').update(data).verify(key, sig, enc)
+          return crypto.createVerify('RSA-SHA1').update(data).verify(key, sig, enc)
         })
 
         cb(null, verified)
