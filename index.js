@@ -17,8 +17,10 @@ var readSync = function(file) {
 
 var HOME = process.env.HOME || process.env.USERPROFILE
 var CACHE = path.join(HOME, '.cache')
-var DEFAULT_SSH_KEY = readSync(path.join(HOME, '.ssh/id_rsa')) || readSync(path.join(HOME, '.ssh/id_dsa'))
+var DEFAULT_PRIVATE_KEY = readSync(path.join(HOME, '.ssh/id_rsa')) || readSync(path.join(HOME, '.ssh/id_dsa'))
 var SSH_AUTH_SOCK = !!process.env.SSH_AUTH_SOCK
+
+debug('SSH_AUTH_SOCK', process.env.SSH_AUTH_SOCK)
 
 var create = function (fetchKey) {
   var toPEM = function(key) {
@@ -45,7 +47,10 @@ var create = function (fetchKey) {
     var publicKeys = keys.length && keys.every(isPublicKey) && keys
     var encrypted = false
 
-    if (!SSH_AUTH_SOCK && !privateKey) privateKey = DEFAULT_SSH_KEY
+    if (!SSH_AUTH_SOCK && !privateKey) {
+      debug('using default private key (either ~/.ssh/id_rsa or ~/.ssh/id_dsa)')
+      privateKey = DEFAULT_PRIVATE_KEY
+    }
 
     if (privateKey) {
       if (privateKey.toString().indexOf('ENCRYPTED') > -1) encrypted = true
@@ -95,7 +100,7 @@ var create = function (fetchKey) {
               return result || (pubPems.indexOf(toPEM(key.type+' '+key.ssh_key)) > -1 && key)
             }, null)
 
-            if (!key && SSH_AUTH_SOCK && DEFAULT_SSH_KEY) {
+            if (!key && SSH_AUTH_SOCK && DEFAULT_PRIVATE_KEY) {
               SSH_AUTH_SOCK = false
               return cb(null, null)
             }
