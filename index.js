@@ -52,7 +52,7 @@ var create = function (fetchKey) {
         if (typeof enc === 'function') return sign(data, null, enc)
         process.nextTick(function() {
           if (encrypted) return cb(new Error('Encrypted keys not supported. Setup an SSH agent or decrypt it first'))
-          cb(null, crypto.createSign('RSA-SHA1').update(data).sign(privateKey, enc))
+          cb(null, crypto.createSign('RSA-SHA224').update(data).sign(privateKey, enc))
         })
       }
     }
