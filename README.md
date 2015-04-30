@@ -15,7 +15,7 @@ var ghsign = require('ghsign')
 var sign = ghsign.signer('mafintosh')
 
 // create a verifier (can be any Github username)
-var verify = ghsign.verify('mafintosh')
+var verify = ghsign.verifier('mafintosh')
 
 // sign some data
 sign('test', function(err, sig) {
