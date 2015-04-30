@@ -58,7 +58,12 @@ var create = function (fetchKey) {
         if (typeof enc === 'function') return sign(data, null, enc)
         process.nextTick(function() {
           if (encrypted) return cb(new Error('Encrypted keys not supported. Setup an SSH agent or decrypt it first'))
-          cb(null, crypto.createSign('RSA-SHA1').update(data).sign(privateKey, enc))
+          try {
+            var sig = crypto.createSign('RSA-SHA1').update(data).sign(privateKey, enc)
+          } catch (err) {
+            return cb(err)
+          }
+          cb(null, sig)
         })
       }
     }
@@ -94,7 +99,7 @@ var create = function (fetchKey) {
           client.requestIdentities(function(err, keys) {
             if (err) return cb(err)
             debug('ssh-agent public keys', keys.map(function (k) { return k.ssh_key }))
-              
+
             var pubPems = pubs.map(toPEM)
             var key = keys.reduce(function(result, key) {
               return result || (pubPems.indexOf(toPEM(key.type+' '+key.ssh_key)) > -1 && key)
@@ -123,6 +128,7 @@ var create = function (fetchKey) {
         } catch (err) {
           return oncache(cb)
         }
+
         if (data.username !== username) return onnocache(cb)
         oncache(data, cb)
       })
@@ -168,12 +174,16 @@ var create = function (fetchKey) {
         if (err) return cb(err)
 
         var verified = pubs.some(function(key) {
-          var valid = crypto.createVerify('RSA-SHA1').update(data).verify(toPEM(key), sig, enc)
+          try {
+            var valid = crypto.createVerify('RSA-SHA1').update(data).verify(toPEM(key), sig, enc)
+          } catch (err) {
+            return false
+          }
           if (!valid) debug('verify failed', key)
           else debug('verify OK', key)
           return valid
         })
-        
+
         cb(null, verified)
       })
     }
