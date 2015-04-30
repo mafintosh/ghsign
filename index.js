@@ -5,6 +5,7 @@ var fs = require('fs')
 var path = require('path')
 var SSHAgentClient = require('ssh-agent')
 var sshKeyToPEM = require('ssh-key-to-pem')
+var debug = require('debug')('ghsign')
 
 var readSync = function(file) {
   try {
@@ -16,8 +17,10 @@ var readSync = function(file) {
 
 var HOME = process.env.HOME || process.env.USERPROFILE
 var CACHE = path.join(HOME, '.cache')
-var DEFAULT_SSH_KEY = readSync(path.join(HOME, '.ssh/id_rsa')) || readSync(path.join(HOME, '.ssh/id_dsa'))
+var DEFAULT_PRIVATE_KEY = readSync(path.join(HOME, '.ssh/id_rsa')) || readSync(path.join(HOME, '.ssh/id_dsa'))
 var SSH_AUTH_SOCK = !!process.env.SSH_AUTH_SOCK
+
+debug('SSH_AUTH_SOCK', process.env.SSH_AUTH_SOCK)
 
 var create = function (fetchKey) {
   var toPEM = function(key) {
@@ -32,7 +35,7 @@ var create = function (fetchKey) {
   var githubPublicKeys = function(username, cb) {
     fetchKey(username, function (err, keys) {
       if (err) return cb(err)
-      cb(null, keys.trim().split('\n').map(toPEM))
+      cb(null, keys.trim().split('\n'))
     })
   }
 
@@ -44,7 +47,10 @@ var create = function (fetchKey) {
     var publicKeys = keys.length && keys.every(isPublicKey) && keys
     var encrypted = false
 
-    if (!SSH_AUTH_SOCK && !privateKey) privateKey = DEFAULT_SSH_KEY
+    if (!SSH_AUTH_SOCK && !privateKey) {
+      debug('using default private key (either ~/.ssh/id_rsa or ~/.ssh/id_dsa)')
+      privateKey = DEFAULT_PRIVATE_KEY
+    }
 
     if (privateKey) {
       if (privateKey.toString().indexOf('ENCRYPTED') > -1) encrypted = true
@@ -70,6 +76,7 @@ var create = function (fetchKey) {
       var oncache = function(cache, cb) {
         client.requestIdentities(function(err, keys) {
           if (err) return cb(err)
+          debug('ssh-agent public keys', keys.map(function (k) { return k.ssh_key }))
 
           var key = keys.reduce(function(result, key) {
             return result || (key.type === cache.type && key.ssh_key === cache.ssh_key && key)
@@ -86,12 +93,14 @@ var create = function (fetchKey) {
 
           client.requestIdentities(function(err, keys) {
             if (err) return cb(err)
-
+            debug('ssh-agent public keys', keys.map(function (k) { return k.ssh_key }))
+              
+            var pubPems = pubs.map(toPEM)
             var key = keys.reduce(function(result, key) {
-              return result || (pubs.indexOf(toPEM(key.type+' '+key.ssh_key)) > -1 && key)
+              return result || (pubPems.indexOf(toPEM(key.type+' '+key.ssh_key)) > -1 && key)
             }, null)
 
-            if (!key && SSH_AUTH_SOCK && DEFAULT_SSH_KEY) {
+            if (!key && SSH_AUTH_SOCK && DEFAULT_PRIVATE_KEY) {
               SSH_AUTH_SOCK = false
               return cb(null, null)
             }
@@ -132,6 +141,7 @@ var create = function (fetchKey) {
           cachedSign = signer(username)
           return sign(data, enc, cb)
         }
+        debug('selected public key', key.ssh_key)
 
         client.sign(key, data, function(err, sig) {
           if (err) return cb(err)
@@ -158,9 +168,12 @@ var create = function (fetchKey) {
         if (err) return cb(err)
 
         var verified = pubs.some(function(key) {
-          return crypto.createVerify('RSA-SHA1').update(data).verify(key, sig, enc)
+          var valid = crypto.createVerify('RSA-SHA1').update(data).verify(toPEM(key), sig, enc)
+          if (!valid) debug('verify failed', key)
+          else debug('verify OK', key)
+          return valid
         })
-
+        
         cb(null, verified)
       })
     }
