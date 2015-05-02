@@ -1,6 +1,6 @@
 {
   "name": "ghsign",
-  "version": "1.3.2",
+  "version": "1.3.3",
   "description": "Sign/verify data using your local ssh private key and your public key from Github",
   "main": "index.js",
   "dependencies": {
