@@ -104,7 +104,7 @@ var create = function (fetchKey) {
 
             var pubPems = pubs.map(toPEM)
             var key = keys.reduce(function(result, key) {
-              var match = key.type === cache.type && key.ssh_key === cache.ssh_key && key
+              var match = (pubPems.indexOf(toPEM(key.type+' '+key.ssh_key)) > -1 && key) && key
               if (match && match.type === 'ssh-rsa') return match
               return result || match
             }, null)
