@@ -84,7 +84,9 @@ var create = function (fetchKey) {
           debug('ssh-agent public keys', keys.map(function (k) { return k.ssh_key }))
 
           var key = keys.reduce(function(result, key) {
-            return result || (key.type === cache.type && key.ssh_key === cache.ssh_key && key)
+            var match = key.type === cache.type && key.ssh_key === cache.ssh_key && key
+            if (match && match.type === 'ssh-rsa') return match
+            return result || match
           }, null)
 
           if (!key) return onnocache(cb)
@@ -102,7 +104,9 @@ var create = function (fetchKey) {
 
             var pubPems = pubs.map(toPEM)
             var key = keys.reduce(function(result, key) {
-              return result || (pubPems.indexOf(toPEM(key.type+' '+key.ssh_key)) > -1 && key)
+              var match = key.type === cache.type && key.ssh_key === cache.ssh_key && key
+              if (match && match.type === 'ssh-rsa') return match
+              return result || match
             }, null)
 
             if (!key && SSH_AUTH_SOCK && DEFAULT_PRIVATE_KEY) {
