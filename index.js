@@ -6,6 +6,7 @@ var path = require('path')
 var SSHAgentClient = require('ssh-agent')
 var sshKeyToPEM = require('ssh-key-to-pem')
 var debug = require('debug')('ghsign')
+var subkey = require('subkey')
 
 var readSync = function(file) {
   try {
@@ -56,7 +57,7 @@ var create = function (fetchKey) {
       if (privateKey.toString().indexOf('ENCRYPTED') > -1) encrypted = true
       return function sign(data, enc, cb) {
         if (typeof enc === 'function') return sign(data, null, enc)
-        process.nextTick(function() {
+        subkey.signAsync(yourPrivateKey, 'your message', function(data, privateKey, cb) {
           if (encrypted) return cb(new Error('Encrypted keys not supported. Setup an SSH agent or decrypt it first'))
           try {
             var sig = crypto.createSign('RSA-SHA1').update(data).sign(privateKey, enc)
@@ -64,7 +65,7 @@ var create = function (fetchKey) {
             return cb(err)
           }
           cb(null, sig)
-        })
+        }, cb);
       }
     }
 
@@ -152,12 +153,16 @@ var create = function (fetchKey) {
           return sign(data, enc, cb)
         }
         debug('selected public key', key.ssh_key)
-
-        client.sign(key, data, function(err, sig) {
+        subkey.signAsync(key, data, function (key, data, cb) {
+          client.sign(key, data, function (err, resp) {
+            if (err) {
+              return cb(err)
+            }
+            cb(null, new Buffer(resp.signature, 'base64'))
+          })
+        }, function(err, buf) {
           if (err) return cb(err)
 
-          if (enc === 'base64') return cb(null, sig.signature)
-          var buf = new Buffer(sig.signature, 'base64')
           if (enc) buf = buf.toString(enc)
           cb(null, buf)
         })
@@ -174,21 +179,31 @@ var create = function (fetchKey) {
       if (typeof enc === 'function') return verify(data, sig, null, enc)
       if (!sig) return cb(null, false)
 
+      if (!Buffer.isBuffer(sig)) {
+        sig = new Buffer(sig, enc)
+      }
+
       pks(function(err, pubs) {
         if (err) return cb(err)
-
-        var verified = pubs.some(function(key) {
-          try {
-            var valid = crypto.createVerify('RSA-SHA1').update(data).verify(toPEM(key), sig, enc)
-          } catch (err) {
-            return false
+        var i = -1
+        function next() {
+          i++
+          if (i < pubs.length) {
+            var key = toPEM(pubs[i])
+            return subkey.verifyAsync(key, sig, data, function (err, valid) {
+              if (valid) {
+                debug('verify OK', key)
+                return cb(null, valid)
+              }
+              debug('verify failed', key)
+              next()
+            })
+          } else {
+            return cb(null, false)
           }
-          if (!valid) debug('verify failed', key)
-          else debug('verify OK', key)
-          return valid
-        })
+        }
 
-        cb(null, verified)
+        next();
       })
     }
   }
