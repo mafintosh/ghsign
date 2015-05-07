@@ -65,7 +65,7 @@ var create = function (fetchKey) {
             return cb(err)
           }
           cb(null, sig)
-        }, cb);
+        }, cb)
       }
     }
 
@@ -203,7 +203,7 @@ var create = function (fetchKey) {
           }
         }
 
-        next();
+        next()
       })
     }
   }
