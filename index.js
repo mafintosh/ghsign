@@ -57,7 +57,7 @@ var create = function (fetchKey) {
       if (privateKey.toString().indexOf('ENCRYPTED') > -1) encrypted = true
       return function sign(data, enc, cb) {
         if (typeof enc === 'function') return sign(data, null, enc)
-        subkey.signAsync(yourPrivateKey, 'your message', function(data, privateKey, cb) {
+        subkey.signAsync(privateKey, data, function(data, privateKey, cb) {
           if (encrypted) return cb(new Error('Encrypted keys not supported. Setup an SSH agent or decrypt it first'))
           try {
             var sig = crypto.createSign('RSA-SHA1').update(data).sign(privateKey, enc)
