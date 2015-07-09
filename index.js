@@ -127,6 +127,7 @@ var create = function (fetchKey) {
       }
 
       fs.readFile(path.join(CACHE, 'ghsign.json'), 'utf-8', function(err, data) {
+        if (err) return cb(err)
         if (!data) return onnocache(cb)
         try {
           data = JSON.parse(data)
@@ -191,6 +192,7 @@ var create = function (fetchKey) {
           if (i < pubs.length) {
             var key = toPEM(pubs[i])
             return subkey.verifyAsync(key, sig, data, function (err, valid) {
+              if (err) return cb(err)
               if (valid) {
                 debug('verify OK', key)
                 return cb(null, valid)
