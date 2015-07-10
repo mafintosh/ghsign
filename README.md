@@ -6,6 +6,9 @@ Sign/verify data using your local ssh private key and your public key from Githu
 npm install ghsign
 ```
 
+[![Build status](https://travis-ci.org/mafintosh/ghsign.svg?branch=master)](https://travis-ci.org/mafintosh/ghsign)
+[![js-standard-style](https://img.shields.io/badge/code%20style-standard-brightgreen.svg?style=flat)](https://github.com/feross/standard)
+
 ## Usage
 
 ``` js
