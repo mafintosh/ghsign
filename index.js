@@ -68,7 +68,7 @@ var create = function (fetchKey) {
       }
     }
 
-    var client = new SSHAgentClient()
+    var client = new SSHAgentClient({timeout: 30000})
     var pks = publicKeys ?
       function (cb) {
         cb(null, publicKeys)
