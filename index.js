@@ -126,7 +126,7 @@ var create = function (fetchKey) {
       }
 
       fs.readFile(path.join(CACHE, 'ghsign.json'), 'utf-8', function (err, data) {
-        if (err) return cb(err)
+        if (err && err.code !== 'ENOENT') return cb(err)
         if (!data) return onnocache(cb)
         try {
           data = JSON.parse(data)
