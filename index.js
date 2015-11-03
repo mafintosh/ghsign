@@ -39,7 +39,7 @@ var create = function (fetchKey) {
   var githubPublicKeys = function (username, cb) {
     fetchKey(username, function (err, keys) {
       if (err) return cb(err)
-      cb(null, keys.trim().split('\n'))
+      cb(null, keys.toString().trim().split('\n'))
     })
   }
 
