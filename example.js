@@ -1,4 +1,4 @@
-var username = 'mafintosh' // change this to your github username
+var username = 'maxogden' // change this to your github username
 var ghsign = require('./')
 
 var sign = ghsign.signer(username)

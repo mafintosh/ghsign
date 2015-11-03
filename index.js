@@ -25,7 +25,11 @@ debug('SSH_AUTH_SOCK', process.env.SSH_AUTH_SOCK)
 var create = function (fetchKey) {
   var toPEM = function (key) {
     if (Buffer.isBuffer(key)) key = key.toString()
-    return key.indexOf('-----BEGIN ') > -1 ? key : sshKeyToPEM(key)
+    try {
+      return key.indexOf('-----BEGIN ') > -1 ? key : sshKeyToPEM(key)
+    } catch (e) {
+      return ''
+    }
   }
 
   var isPublicKey = function (key) {
@@ -110,6 +114,7 @@ var create = function (fetchKey) {
             }, null)
 
             if (!key && SSH_AUTH_SOCK && DEFAULT_PRIVATE_KEY) {
+              debug('no suitable ssh-agent key')
               SSH_AUTH_SOCK = false
               return cb(null, null)
             }
