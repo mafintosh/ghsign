@@ -6,6 +6,7 @@ var path = require('path')
 var SSHAgentClient = require('ssh-agent')
 var sshKeyToPEM = require('ssh-key-to-pem')
 var debug = require('debug')('ghsign')
+var bufferFrom = require('buffer-from')
 
 var readSync = function (file) {
   try {
@@ -148,7 +149,7 @@ var create = function (fetchKey) {
 
     return function sign (data, enc, cb) {
       if (typeof enc === 'function') return sign(data, null, enc)
-      if (typeof data === 'string') data = new Buffer(data)
+      if (typeof data === 'string') data = bufferFrom(data)
       if (cachedSign) return cachedSign(data, enc, cb)
 
       detectPublicKey(function (err, key) {
@@ -163,7 +164,7 @@ var create = function (fetchKey) {
           if (err) return cb(err)
 
           if (enc === 'base64') return cb(null, sig.signature)
-          var buf = new Buffer(sig.signature, 'base64')
+          var buf = bufferFrom(sig.signature, 'base64')
           if (enc) buf = buf.toString(enc)
           cb(null, buf)
         })

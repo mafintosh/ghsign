@@ -4,6 +4,7 @@
   "description": "Sign/verify data using your local ssh private key and your public key from Github",
   "main": "index.js",
   "dependencies": {
+    "buffer-from": "^1.0.0",
     "debug": "^2.1.3",
     "request": "^2.39.0",
     "ssh-agent": "^0.2.2",
